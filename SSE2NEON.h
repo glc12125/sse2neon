@@ -297,6 +297,80 @@ typedef union ALIGN_STRUCT(16) SIMDVec
 
 
 // ******************************************
+// Extra fucntions added by Chao Gao
+
+// ******************************************
+
+
+#if !defined(__MM_MALLOC_H)
+// copied from mm_malloc.h {
+#include <stdlib.h>
+
+/* We can't depend on <stdlib.h> since the prototype of posix_memalign
+ may not be visible.  */
+#ifndef __cplusplus
+extern int posix_memalign (void **, size_t, size_t);
+#else
+extern "C" int posix_memalign (void **, size_t, size_t) throw ();
+#endif
+
+static __inline void *
+_mm_malloc (size_t size, size_t alignment)
+{
+    void *ptr;
+    if (alignment == 1)
+        return malloc (size);
+    if (alignment == 2 || (sizeof (void *) == 8 && alignment == 4))
+        alignment = sizeof (void *);
+    if (posix_memalign (&ptr, alignment, size) == 0)
+        return ptr;
+    else
+        return NULL;
+}
+
+static __inline void
+_mm_free (void * ptr)
+{
+    free (ptr);
+}
+// } copied from mm_malloc.h
+#endif
+
+/* Computes the absolute difference of the 16 unsigned 8-bit integers from a and the 16 unsigned 8-bit integers from b.
+ * __m128i _mm_sad_epu8 (__m128i a, __m128i b);
+ * PSADBW
+ * Return Value
+ * Sums the upper 8 differences and lower 8 differences and packs the resulting 2 unsigned 16-bit integers into the upper and lower 64-bit elements.
+ * r0 := abs(a0 - b0) + abs(a1 - b1) +...+ abs(a7 - b7)
+ * r1 := 0x0 ; r2 := 0x0 ; r3 := 0x0
+ * r4 := abs(a8 - b8) + abs(a9 - b9) +...+ abs(a15 - b15)
+ * r5 := 0x0 ; r6 := 0x0 ; r7 := 0x0
+ * */
+// added from https://github.com/otim/SSE-to-NEON/blob/master/sse_to_neon.hpp
+FORCE_INLINE __m128i _mm_sad_epu8 (__m128i a, __m128i b)
+{
+    uint64x2_t sad = reinterpret_cast<uint64x2_t>(vabdq_u8(reinterpret_cast<uint8x16_t>(a),reinterpret_cast<uint8x16_t>(b)));
+    sad = reinterpret_cast<uint64x2_t>(vpaddlq_u8(reinterpret_cast<uint8x16_t>(sad)));
+    sad = reinterpret_cast<uint64x2_t>(vpaddlq_u16(reinterpret_cast<uint16x8_t>(sad)));
+    sad = vpaddlq_u32(reinterpret_cast<uint32x4_t>(sad));
+    return reinterpret_cast<__m128i>(sad);
+}
+
+
+/* Shifts the 8 signed 16-bit integers in a right by count bits while shifting in the sign bit.
+ *  r0 := a0 >> count
+ *  r1 := a1 >> count
+ *  ...
+ *  r7 := a7 >> count
+ *  */
+// added from https://github.com/otim/SSE-to-NEON/blob/master/sse_to_neon.hpp
+FORCE_INLINE __m128i _mm_srai_epi16(const __m128i& a, const int count){
+    int16x8_t b = vmovq_n_s16(-count);
+    return reinterpret_cast<__m128i>(vshlq_s16(a,b));
+    //    return vrshrq_n_s16(a, count);// TODO Argument to '__builtin_neon_vrshrq_n_v' must be a constant integer
+}
+
+// ******************************************
 // Set/get methods
 // ******************************************
 
@@ -1680,6 +1754,7 @@ FORCE_INLINE void _mm_clflush(void const*p)
 	// no corollary for Neon?
 }
 
+#
 #if defined(__GNUC__) || defined(__clang__)
 #	pragma pop_macro("ALIGN_STRUCT")
 #	pragma pop_macro("FORCE_INLINE")

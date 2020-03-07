@@ -860,6 +860,50 @@ FORCE_INLINE __m128i _mm_shuffle_epi_3332(__m128i a)
 	return vreinterpretq_m128i_s32(vcombine_s32(a32, a33));
 }
 
+// Shuffle packed 8-bit integers in a according to shuffle control mask in the
+// corresponding 8-bit element of b, and store the results in dst.
+// https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_shuffle_epi8&expand=5146
+FORCE_INLINE __m128i _mm_shuffle_epi8(__m128i a, __m128i b)
+{
+#if __aarch64__
+    int8x16_t tbl = vreinterpretq_s8_m128i(a);   // input a
+    uint8x16_t idx = vreinterpretq_u8_m128i(b);  // input b
+    uint8_t __attribute__((aligned(16)))
+    mask[16] = {0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F,
+                0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F};
+    uint8x16_t idx_masked =
+        vandq_u8(idx, vld1q_u8(mask));  // avoid using meaningless bits
+
+    return vreinterpretq_m128i_s8(vqtbl1q_s8(tbl, idx_masked));
+#else
+    uint8_t *tbl = (uint8_t *) &a;  // input a
+    uint8_t *idx = (uint8_t *) &b;  // input b
+    int32_t r[4];
+
+    r[0] = ((idx[3] & 0x80) ? 0 : tbl[idx[3] % 16]) << 24;
+    r[0] |= ((idx[2] & 0x80) ? 0 : tbl[idx[2] % 16]) << 16;
+    r[0] |= ((idx[1] & 0x80) ? 0 : tbl[idx[1] % 16]) << 8;
+    r[0] |= ((idx[0] & 0x80) ? 0 : tbl[idx[0] % 16]);
+
+    r[1] = ((idx[7] & 0x80) ? 0 : tbl[idx[7] % 16]) << 24;
+    r[1] |= ((idx[6] & 0x80) ? 0 : tbl[idx[6] % 16]) << 16;
+    r[1] |= ((idx[5] & 0x80) ? 0 : tbl[idx[5] % 16]) << 8;
+    r[1] |= ((idx[4] & 0x80) ? 0 : tbl[idx[4] % 16]);
+
+    r[2] = ((idx[11] & 0x80) ? 0 : tbl[idx[11] % 16]) << 24;
+    r[2] |= ((idx[10] & 0x80) ? 0 : tbl[idx[10] % 16]) << 16;
+    r[2] |= ((idx[9] & 0x80) ? 0 : tbl[idx[9] % 16]) << 8;
+    r[2] |= ((idx[8] & 0x80) ? 0 : tbl[idx[8] % 16]);
+
+    r[3] = ((idx[15] & 0x80) ? 0 : tbl[idx[15] % 16]) << 24;
+    r[3] |= ((idx[14] & 0x80) ? 0 : tbl[idx[14] % 16]) << 16;
+    r[3] |= ((idx[13] & 0x80) ? 0 : tbl[idx[13] % 16]) << 8;
+    r[3] |= ((idx[12] & 0x80) ? 0 : tbl[idx[12] % 16]);
+
+    return vld1q_s32(r);
+#endif
+}
+
 //FORCE_INLINE __m128i _mm_shuffle_epi32_default(__m128i a, __constrange(0,255) int imm)
 #if ENABLE_CPP_VERSION
 FORCE_INLINE __m128i _mm_shuffle_epi32_default(__m128i a, __constrange(0,255) int imm)
@@ -1178,6 +1222,12 @@ FORCE_INLINE __m128i _mm_adds_epi16(__m128i a, __m128i b)
 	return vreinterpretq_m128i_s16(vqaddq_s16(vreinterpretq_s16_m128i(a), vreinterpretq_s16_m128i(b)));
 }
 
+FORCE_INLINE __m128i _mm_adds_epu16(__m128i a, __m128i b)
+{
+    return vreinterpretq_m128i_u16(
+        vqaddq_u16(vreinterpretq_u16_m128i(a), vreinterpretq_u16_m128i(b)));
+}
+
 //added by hasindu
 //Adds the 16 unsigned 8-bit integers in a to the 16 unsigned 8-bit integers in b and saturates.. https://msdn.microsoft.com/en-us/library/9hahyddy(v=vs.100).aspx
 FORCE_INLINE __m128i _mm_adds_epu8(__m128i a, __m128i b)
@@ -1302,6 +1352,12 @@ FORCE_INLINE __m128i _mm_min_epu8(__m128i a, __m128i b)
 	return vreinterpretq_m128i_u8(vminq_u8(vreinterpretq_u8_m128i(a), vreinterpretq_u8_m128i(b)));
 }
 
+
+// Computes the pairwise minima of the 8 signed 16-bit integers from a and the 16 unsigned 16-bit integers from b.
+FORCE_INLINE __m128i _mm_min_epu16(__m128i a, __m128i b)
+{
+	return vreinterpretq_m128i_u16(vminq_u16(vreinterpretq_u16_m128i(a), vreinterpretq_u16_m128i(b)));
+}
 
 // Computes the pairwise minima of the 8 signed 16-bit integers from a and the 8 signed 16-bit integers from b. https://msdn.microsoft.com/en-us/library/vstudio/6te997ew(v=vs.100).aspx
 FORCE_INLINE __m128i _mm_min_epi16(__m128i a, __m128i b)
@@ -1716,6 +1772,14 @@ FORCE_INLINE __m128i _mm_unpackhi_epi32(__m128i a, __m128i b)
 	int32x2_t b1 = vget_high_s32(vreinterpretq_s32_m128i(b));
 	int32x2x2_t result = vzip_s32(a1, b1);
 	return vreinterpretq_m128i_s32(vcombine_s32(result.val[0], result.val[1]));
+}
+
+// shift to right
+// https://msdn.microsoft.com/en-us/library/bb514041(v=vs.120).aspx
+// http://blog.csdn.net/hemmingway/article/details/44828303
+FORCE_INLINE __m128i _mm_alignr_epi8(__m128i a, __m128i b, const int c)
+{
+    return (__m128i) vextq_s8((int8x16_t) a, (int8x16_t) b, c);
 }
 
 // Extracts the selected signed or unsigned 16-bit integer from a and zero extends.  https://msdn.microsoft.com/en-us/library/6dceta0c(v=vs.100).aspx

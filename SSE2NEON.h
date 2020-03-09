@@ -1324,6 +1324,16 @@ FORCE_INLINE __m128 _mm_min_ps(__m128 a, __m128 b)
 	return vreinterpretq_m128_f32(vminq_f32(vreinterpretq_f32_m128(a), vreinterpretq_f32_m128(b)));
 }
 
+// Horizontally compute the minimum amongst the packed unsigned 16-bit integers in a, store the minimum and index in dst, and zero the remaining bits in dst.
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_minpos_epu16&expand=3789
+FORCE_INLINE __m128i _mm_minpos_epu16 (__m128i a)
+{
+	// TODO: this is not the correct implementation!
+	// All callers only make use of the first 16 bit in the result, which is the min value
+	int16x8_t minVal = {vminvq_u16(vreinterpretq_u16_m128i(a)), 0, 0, 0, 0, 0, 0, 0};
+	return vreinterpretq_m128i_u16(minVal);
+}
+
 // Computes the maximum of the two lower scalar single-precision floating point values of a and b.  https://msdn.microsoft.com/en-us/library/s6db5esz(v=vs.100).aspx
 FORCE_INLINE __m128 _mm_max_ss(__m128 a, __m128 b)
 {
@@ -1415,6 +1425,13 @@ FORCE_INLINE __m128 _mm_hadd_ps(__m128 a, __m128 b )
 	float32x2_t b32 = vget_high_f32(vreinterpretq_f32_m128(b));
 	return vreinterpretq_m128_f32(vcombine_f32(vpadd_f32(a10, a32), vpadd_f32(b10, b32)));
 #endif
+}
+
+// Horizontally add adjacent pairs of 16-bit integers in a and b, and pack the signed 16-bit results in dst. 
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_hadd_epi16&expand=2938
+FORCE_INLINE __m128i _mm_hadd_epi16 (__m128i a, __m128i b) 
+{
+	return vreinterpretq_m128i_u16(vpaddq_u16(vreinterpretq_s16_m128i(a), vreinterpretq_s16_m128i(b))); //AArch64
 }
 
 // ******************************************

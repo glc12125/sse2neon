@@ -464,6 +464,40 @@ FORCE_INLINE __m128i _mm_set_epi32(int i3, int i2, int i1, int i0)
 	return vreinterpretq_m128i_s32(vld1q_s32(data));
 }
 
+
+// Set packed 8-bit integers in dst with the supplied values in reverse order.
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_set_epi8
+FORCE_INLINE __m128i _mm_set_epi8(char b15,
+                                  char b14,
+                                  char b13,
+                                  char b12,
+                                  char b11,
+                                  char b10,
+                                  char b9,
+                                  char b8,
+                                  char b7,
+                                  char b6,
+                                  char b5,
+                                  char b4,
+                                  char b3,
+                                  char b2,
+                                  char b1,
+                                  char b0)
+{
+    int8_t __attribute__((aligned(16)))
+    data[16] = {(int8_t) b0,  (int8_t) b1,  (int8_t) b2,  (int8_t) b3,
+                (int8_t) b4,  (int8_t) b5,  (int8_t) b6,  (int8_t) b7,
+                (int8_t) b8,  (int8_t) b9,  (int8_t) b10, (int8_t) b11,
+                (int8_t) b12, (int8_t) b13, (int8_t) b14, (int8_t) b15};
+    return (__m128i) vld1q_s8(data); // To be tested
+}
+
+__m128 _mm_set_ss (float a)
+{
+	float __attribute__((aligned(16))) data[4] = {a, 0, 0, 0};
+	return vreinterpretq_m128_f32(vld1q_f32(data));
+}
+
 // Stores four single-precision, floating-point values. https://msdn.microsoft.com/en-us/library/vstudio/s3h4ay6y(v=vs.100).aspx
 FORCE_INLINE void _mm_store_ps(float *p, __m128 a)
 {
@@ -1491,6 +1525,14 @@ FORCE_INLINE __m128i _mm_cmplt_epi8 (__m128i a, __m128i b)
 	return vreinterpretq_m128i_u8(vcltq_s8(vreinterpretq_s8_m128i(a), vreinterpretq_s8_m128i(b)));
 }
 
+//added by Liangchuan Gu 
+//Compares the 8 signed 16-bit integers in a and the 8 signed 16-bit integers in b for lesser than.
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_cmplt_epi16
+FORCE_INLINE __m128i _mm_cmplt_epi16 (__m128i a, __m128i b)
+{
+	return vreinterpretq_m128i_u16(vcltq_s16(vreinterpretq_s16_m128i(a), vreinterpretq_s16_m128i(b)));
+}
+
 
 //added by hasindu 
 //Compares the 16 signed 8-bit integers in a and the 16 signed 8-bit integers in b for greater than. https://msdn.microsoft.com/zh-tw/library/wf45zt2b(v=vs.100).aspx
@@ -1668,6 +1710,20 @@ FORCE_INLINE int _mm_cvtsi128_si32(__m128i a)
 FORCE_INLINE __m128i _mm_cvtsi32_si128(int a)
 {
 	return vreinterpretq_m128i_s32(vsetq_lane_s32(a, vdupq_n_s32(0), 0));
+}
+
+// Convert the 32-bit integer b to a single-precision (32-bit) floating-point element, store the result in the lower element of dst, and copy the upper 3 packed elements from a to the upper elements of dst.
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_cvt_si2ss
+
+FORCE_INLINE __m128 _mm_set_ps(float w, float z, float y, float x)
+{
+	float __attribute__((aligned(16))) data[4] = { x, y, z, w };
+	return vreinterpretq_m128_f32(vld1q_f32(data));
+}
+
+FORCE_INLINE __m128 _mm_cvt_si2ss(__m128 a, int b)
+{
+
 }
 
 

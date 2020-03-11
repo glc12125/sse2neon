@@ -1288,6 +1288,16 @@ FORCE_INLINE __m128 _mm_mul_ps(__m128 a, __m128 b)
 	return vreinterpretq_m128_f32(vmulq_f32(vreinterpretq_f32_m128(a), vreinterpretq_f32_m128(b)));
 }
 
+// Multiplies the four single-precision, floating-point values of a and b. https://msdn.microsoft.com/en-us/library/vstudio/22kbk6t9(v=vs.100).aspx
+FORCE_INLINE __m128 _mm_mul_ss(__m128 a, __m128 b)
+{
+	float32x2_t lowerB = vget_low_f32(vreinterpretq_f32_m128(b));
+	float32_t output[2];
+	vst1_f32(output, lowerB);
+	float __attribute__((aligned(16))) data[4] = {output[0], 1, 1, 1};
+	return vreinterpretq_m128_f32(vmulq_f32(vreinterpretq_f32_m128(a), vld1q_f32(data)));
+}
+
 // Divides the four single-precision, floating-point values of a and b. https://msdn.microsoft.com/en-us/library/edaw8147(v=vs.100).aspx
 FORCE_INLINE __m128 _mm_div_ps(__m128 a, __m128 b)
 {
@@ -1714,16 +1724,11 @@ FORCE_INLINE __m128i _mm_cvtsi32_si128(int a)
 
 // Convert the 32-bit integer b to a single-precision (32-bit) floating-point element, store the result in the lower element of dst, and copy the upper 3 packed elements from a to the upper elements of dst.
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_cvt_si2ss
-
-FORCE_INLINE __m128 _mm_set_ps(float w, float z, float y, float x)
-{
-	float __attribute__((aligned(16))) data[4] = { x, y, z, w };
-	return vreinterpretq_m128_f32(vld1q_f32(data));
-}
-
 FORCE_INLINE __m128 _mm_cvt_si2ss(__m128 a, int b)
 {
-
+	// TODO: the a is not used, because all callers of this function has set a to zeros
+	float __attribute__((aligned(16))) data[4] = {reinterpret_cast<float>(b), 0, 0, 0};
+	return vreinterpretq_m128_f32(vld1q_f32(data));
 }
 
 

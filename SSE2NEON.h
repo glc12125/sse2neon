@@ -615,6 +615,19 @@ FORCE_INLINE __m128i _mm_or_si128(__m128i a, __m128i b)
 	return vreinterpretq_m128i_s32( vorrq_s32(vreinterpretq_s32_m128i(a), vreinterpretq_s32_m128i(b)) );
 }
 
+
+// Blend packed 8-bit integers from a and b using mask, and store the results in dst. 
+//https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_blendv_epi8
+//Implementation source https://github.com/intel/ARM_NEON_2_x86_SSE/blob/master/NEON_2_SSE.h
+FORCE_INLINE __m128i _mm_blendv_epi8(__m128i a, __m128i b, __m128i mask) //this is NOT exact implementation of _mm_blendv_epi8  !!!!! - please see below
+{
+    //it assumes mask is either 0xff or 0  always (like in all usecases below) while for the original _mm_blendv_epi8 only MSB mask byte matters.
+    __m128i a_masked, b_masked;
+    b_masked = _mm_and_si128 (mask,b); //use b if mask 0xff
+    a_masked = _mm_andnot_si128 (mask,a);
+    return _mm_or_si128(a_masked, b_masked);
+}
+
 // Computes the bitwise XOR of the 128-bit value in a and the 128-bit value in b.  https://msdn.microsoft.com/en-us/library/fzt08www(v=vs.100).aspx
 FORCE_INLINE __m128i _mm_xor_si128(__m128i a, __m128i b)
 {

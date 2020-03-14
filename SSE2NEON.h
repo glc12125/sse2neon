@@ -493,7 +493,7 @@ FORCE_INLINE __m128i _mm_set_epi8(char b15,
     return (__m128i) vld1q_s8(data); // To be tested
 }
 
-__m128 _mm_set_ss (float a)
+FORCE_INLINE __m128 _mm_set_ss (float a)
 {
 	float __attribute__((aligned(16))) data[4] = {a, 0, 0, 0};
 	return vreinterpretq_m128_f32(vld1q_f32(data));

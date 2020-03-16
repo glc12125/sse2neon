@@ -140,6 +140,9 @@ enum InstructionTest
     IT_MM_SETR_EPI32,
     IT_MM_MIN_EPU8,   
 
+    //added by Liangchuan
+    IT_MM_SHUFFLE_EPI8,   // Unit test implemented and verified as fully working
+    IT_MM_ADDS_EPU16,
     IT_LAST
 };
 

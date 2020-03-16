@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <float.h>
 #include <math.h>
+#include <iostream>
 
 #include "SSE2NEONBinding.h"
 #include "SSE2NEONTEST.h"
@@ -443,7 +444,14 @@ static inline float bankersRounding(float val)
         case IT_MM_MIN_EPU8:
             ret = "MM_MIN_EPU8";
             break;
-               
+        // added by Liangchuan Gu
+        case IT_MM_SHUFFLE_EPI8:
+            ret = "MM_SHUFFLE_EPI8";
+            break;
+        case IT_MM_ADDS_EPU16:
+            ret = "MM_ADDS_EPU16";
+            break;    
+
         }        
         
         return ret;
@@ -451,6 +459,15 @@ static inline float bankersRounding(float val)
 
 
 #define ASSERT_RETURN(x) if ( !(x) ) return false;
+
+    template<class T>
+    static bool assert_return_message(T a, T b) {
+        if(a != b) {
+            std::cout << a << " is not equal to " << b << "\n";
+            return false;
+        }
+        return true;
+    }
 
     static float ranf(void)
     {
@@ -476,14 +493,14 @@ static inline float bankersRounding(float val)
     bool validateInt16(__m128i a, int16_t d0, int16_t d1, int16_t d2, int16_t d3, int16_t d4, int16_t d5, int16_t d6, int16_t d7)
     {
         const int16_t *t = (const int16_t *)&a;
-        ASSERT_RETURN(t[0] == d0);
-        ASSERT_RETURN(t[1] == d1);
-        ASSERT_RETURN(t[2] == d2);
-        ASSERT_RETURN(t[3] == d3);
-        ASSERT_RETURN(t[4] == d4);
-        ASSERT_RETURN(t[5] == d5);
-        ASSERT_RETURN(t[6] == d6);
-        ASSERT_RETURN(t[7] == d7);
+        assert_return_message(t[0], d0);
+        assert_return_message(t[1], d1);
+        assert_return_message(t[2], d2);
+        assert_return_message(t[3], d3);
+        assert_return_message(t[4], d4);
+        assert_return_message(t[5], d5);
+        assert_return_message(t[6], d6);
+        assert_return_message(t[7], d7);
         return true;
     }
 
@@ -1843,6 +1860,55 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_min_epu8(a,b);
         return validateInt8(c, d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15);
     }
+
+    // added by Liangchuan Gu
+    bool test_mm_shuffle_epi8(const int32_t *a, const int32_t *b)
+    {
+        const uint8_t *tbl = (const uint8_t *) a;
+        const uint8_t *idx = (const uint8_t *) b;
+        int32_t r[4];   
+
+        r[0] = ((idx[3] & 0x80) ? 0 : tbl[idx[3] % 16]) << 24;
+        r[0] |= ((idx[2] & 0x80) ? 0 : tbl[idx[2] % 16]) << 16;
+        r[0] |= ((idx[1] & 0x80) ? 0 : tbl[idx[1] % 16]) << 8;
+        r[0] |= ((idx[0] & 0x80) ? 0 : tbl[idx[0] % 16]);   
+
+        r[1] = ((idx[7] & 0x80) ? 0 : tbl[idx[7] % 16]) << 24;
+        r[1] |= ((idx[6] & 0x80) ? 0 : tbl[idx[6] % 16]) << 16;
+        r[1] |= ((idx[5] & 0x80) ? 0 : tbl[idx[5] % 16]) << 8;
+        r[1] |= ((idx[4] & 0x80) ? 0 : tbl[idx[4] % 16]);   
+
+        r[2] = ((idx[11] & 0x80) ? 0 : tbl[idx[11] % 16]) << 24;
+        r[2] |= ((idx[10] & 0x80) ? 0 : tbl[idx[10] % 16]) << 16;
+        r[2] |= ((idx[9] & 0x80) ? 0 : tbl[idx[9] % 16]) << 8;
+        r[2] |= ((idx[8] & 0x80) ? 0 : tbl[idx[8] % 16]);   
+
+        r[3] = ((idx[15] & 0x80) ? 0 : tbl[idx[15] % 16]) << 24;
+        r[3] |= ((idx[14] & 0x80) ? 0 : tbl[idx[14] % 16]) << 16;
+        r[3] |= ((idx[13] & 0x80) ? 0 : tbl[idx[13] % 16]) << 8;
+        r[3] |= ((idx[12] & 0x80) ? 0 : tbl[idx[12] % 16]); 
+
+        __m128i ret = _mm_shuffle_epi8(test_mm_load_ps(a), test_mm_load_ps(b)); 
+
+        return validateInt(ret, r[3], r[2], r[1], r[0]);
+    }
+
+    bool test_mm_adds_epu16(const int16_t *_a, const int16_t *_b)
+    {
+        uint16_t d0  = (uint16_t)_a[0]  + (uint16_t)_b[0] ;   if(d0  < (uint16_t)_a[0] ) d0  = 65535;
+        uint16_t d1  = (uint16_t)_a[1]  + (uint16_t)_b[1] ;   if(d1  < (uint16_t)_a[1] ) d1  = 65535;
+        uint16_t d2  = (uint16_t)_a[2]  + (uint16_t)_b[2] ;   if(d2  < (uint16_t)_a[2] ) d2  = 65535;
+        uint16_t d3  = (uint16_t)_a[3]  + (uint16_t)_b[3] ;   if(d3  < (uint16_t)_a[3] ) d3  = 65535;
+        uint16_t d4  = (uint16_t)_a[4]  + (uint16_t)_b[4] ;   if(d4  < (uint16_t)_a[4] ) d4  = 65535;
+        uint16_t d5  = (uint16_t)_a[5]  + (uint16_t)_b[5] ;   if(d5  < (uint16_t)_a[5] ) d5  = 65535;
+        uint16_t d6  = (uint16_t)_a[6]  + (uint16_t)_b[6] ;   if(d6  < (uint16_t)_a[6] ) d6  = 65535;
+        uint16_t d7  = (uint16_t)_a[7]  + (uint16_t)_b[7] ;   if(d7  < (uint16_t)_a[7] ) d7  = 65535;
+        
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+        __m128i c = _mm_adds_epu16(a,b);
+        return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2277,7 +2343,13 @@ public:
                 ret = test_mm_min_epu8((const int8_t *)mTestIntPointer1,(const int8_t *)mTestIntPointer2);
                 break;
 
-
+            // added by Liangchuan Gu
+            case IT_MM_SHUFFLE_EPI8:
+                ret = test_mm_shuffle_epi8(mTestIntPointer1, mTestIntPointer2);
+                break;
+            case IT_MM_ADDS_EPU16:
+                ret = test_mm_adds_epu16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
+                break;
                 
         }
 

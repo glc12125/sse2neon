@@ -15,7 +15,7 @@ SRCS	:=	$(wildcard *.cpp)
 #program name
 BINARY = test.out
 #header files and dependcies
-DEPS = SSE2NEON.h SSE2NEONBinding.h SSE2NEONTEST.h
+DEPS = ../SSE2NEON.h SSE2NEONBinding.h SSE2NEONTEST.h
 
 
 $(BINARY) : $(SRCS) $(DEPS) 

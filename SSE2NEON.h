@@ -1539,7 +1539,18 @@ FORCE_INLINE __m128 _mm_hadd_ps(__m128 a, __m128 b )
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_hadd_epi16&expand=2938
 FORCE_INLINE __m128i _mm_hadd_epi16 (__m128i a, __m128i b) 
 {
-	return vreinterpretq_m128i_u16(vpaddq_u16(vreinterpretq_s16_m128i(a), vreinterpretq_s16_m128i(b))); //AArch64
+#if defined(__aarch64__)
+	return vreinterpretq_m128i_s16(vpaddq_s16(vreinterpretq_s16_m128i(a), vreinterpretq_s16_m128i(b)));
+#else
+	int16x8_t aConverted = vreinterpretq_s16_m128i(a);
+    int16x8_t bConverted = vreinterpretq_s16_m128i(b);
+    return vreinterpretq_m128i_s16(
+       vcombine_s16(
+          vpadd_s16(vget_low_s16(aConverted), vget_high_s16(aConverted)),
+          vpadd_s16(vget_low_s16(bConverted), vget_high_s16(bConverted))
+       )
+    );
+#endif
 }
 
 // ******************************************

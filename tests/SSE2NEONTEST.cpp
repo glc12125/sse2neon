@@ -451,7 +451,9 @@ static inline float bankersRounding(float val)
         case IT_MM_ADDS_EPU16:
             ret = "MM_ADDS_EPU16";
             break;    
-
+        case IT_MM_HADD_EPI16:
+            ret = "MM_HADD_EPI16";
+            break;   
         }        
         
         return ret;
@@ -493,14 +495,14 @@ static inline float bankersRounding(float val)
     bool validateInt16(__m128i a, int16_t d0, int16_t d1, int16_t d2, int16_t d3, int16_t d4, int16_t d5, int16_t d6, int16_t d7)
     {
         const int16_t *t = (const int16_t *)&a;
-        assert_return_message(t[0], d0);
-        assert_return_message(t[1], d1);
-        assert_return_message(t[2], d2);
-        assert_return_message(t[3], d3);
-        assert_return_message(t[4], d4);
-        assert_return_message(t[5], d5);
-        assert_return_message(t[6], d6);
-        assert_return_message(t[7], d7);
+        assert_return_message<int16_t>(t[0], d0);
+        assert_return_message<int16_t>(t[1], d1);
+        assert_return_message<int16_t>(t[2], d2);
+        assert_return_message<int16_t>(t[3], d3);
+        assert_return_message<int16_t>(t[4], d4);
+        assert_return_message<int16_t>(t[5], d5);
+        assert_return_message<int16_t>(t[6], d6);
+        assert_return_message<int16_t>(t[7], d7);
         return true;
     }
 
@@ -1909,6 +1911,24 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_adds_epu16(a,b);
         return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
     }
+
+    bool test_mm_hadd_epi16(const int16_t *_a, const int16_t *_b)
+    {
+        int16_t d0  = (int16_t)_a[1]  + (int16_t)_a[0];
+        int16_t d1  = (int16_t)_a[3]  + (int16_t)_a[2];
+        int16_t d2  = (int16_t)_a[5]  + (int16_t)_a[4];
+        int16_t d3  = (int16_t)_a[7]  + (int16_t)_a[6];
+        int16_t d4  = (int16_t)_b[1]  + (int16_t)_b[0];
+        int16_t d5  = (int16_t)_b[3]  + (int16_t)_b[2];
+        int16_t d6  = (int16_t)_b[5]  + (int16_t)_b[4];
+        int16_t d7  = (int16_t)_b[7]  + (int16_t)_b[6];
+
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+
+        __m128i c = _mm_hadd_epi16(a, b);
+        return validateInt16(c, (int16_t)d0, (int16_t)d1, (int16_t)d2, (int16_t)d3, (int16_t)d4, (int16_t)d5, (int16_t)d6, (int16_t)d7);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2349,6 +2369,9 @@ public:
                 break;
             case IT_MM_ADDS_EPU16:
                 ret = test_mm_adds_epu16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
+                break;
+            case IT_MM_HADD_EPI16:
+                ret = test_mm_hadd_epi16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
                 break;
                 
         }

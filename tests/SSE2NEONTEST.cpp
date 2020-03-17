@@ -463,6 +463,9 @@ static inline float bankersRounding(float val)
         case IT_MM_SET_EPI8:
             ret = "MM_SET_EPI8";
         break;
+        case IT_MM_CMPLT_EPI16:
+            ret = "MM_CMPLT_EPI16";
+        break;
         }        
         
         return ret;
@@ -1993,6 +1996,23 @@ static inline float bankersRounding(float val)
         __m128i a = _mm_set_epi8(d15, d14, d13, d12, d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1, d0);
         return validateInt8(a, d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15);
     }
+
+    bool test_mm_cmplt_epi16(const int16_t *_a, const int16_t *_b)
+    {
+        int16_t d0  = (_a[0]  < _b[0] ) ? -1 : 0 ;
+        int16_t d1  = (_a[1]  < _b[1] ) ? -1 : 0 ;
+        int16_t d2  = (_a[2]  < _b[2] ) ? -1 : 0 ;
+        int16_t d3  = (_a[3]  < _b[3] ) ? -1 : 0 ;
+        int16_t d4  = (_a[4]  < _b[4] ) ? -1 : 0 ;
+        int16_t d5  = (_a[5]  < _b[5] ) ? -1 : 0 ;
+        int16_t d6  = (_a[6]  < _b[6] ) ? -1 : 0 ;
+        int16_t d7  = (_a[7]  < _b[7] ) ? -1 : 0 ;
+        
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+        __m128i c = _mm_cmplt_epi16(a,b);
+        return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2445,6 +2465,9 @@ public:
                 break;
             case IT_MM_SET_EPI8:
                 ret = test_mm_set_epi8((const int8_t *)mTestIntPointer1);
+                break;
+            case IT_MM_CMPLT_EPI16:
+                ret = test_mm_cmplt_epi16((const int16_t *)mTestIntPointer1, (const int16_t *)mTestIntPointer2);
                 break;                
         }
 

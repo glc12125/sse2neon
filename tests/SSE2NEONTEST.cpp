@@ -453,7 +453,10 @@ static inline float bankersRounding(float val)
             break;    
         case IT_MM_HADD_EPI16:
             ret = "MM_HADD_EPI16";
-            break;   
+            break;
+        case IT_MM_MIN_EPU16:
+            ret = "MM_MIN_EPU16";
+        break;
         }        
         
         return ret;
@@ -1929,6 +1932,23 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_hadd_epi16(a, b);
         return validateInt16(c, (int16_t)d0, (int16_t)d1, (int16_t)d2, (int16_t)d3, (int16_t)d4, (int16_t)d5, (int16_t)d6, (int16_t)d7);
     }
+
+    bool test_mm_min_epu16(const int16_t *_a, const int16_t *_b)
+    {
+        uint16_t d0  = ((uint16_t)_a[0]  < (uint16_t)_b[0] ) ? (uint16_t)_a[0] : (uint16_t)_b[0]  ;
+        uint16_t d1  = ((uint16_t)_a[1]  < (uint16_t)_b[1] ) ? (uint16_t)_a[1] : (uint16_t)_b[1]  ;
+        uint16_t d2  = ((uint16_t)_a[2]  < (uint16_t)_b[2] ) ? (uint16_t)_a[2] : (uint16_t)_b[2]  ;
+        uint16_t d3  = ((uint16_t)_a[3]  < (uint16_t)_b[3] ) ? (uint16_t)_a[3] : (uint16_t)_b[3]  ;
+        uint16_t d4  = ((uint16_t)_a[4]  < (uint16_t)_b[4] ) ? (uint16_t)_a[4] : (uint16_t)_b[4]  ;
+        uint16_t d5  = ((uint16_t)_a[5]  < (uint16_t)_b[5] ) ? (uint16_t)_a[5] : (uint16_t)_b[5]  ;
+        uint16_t d6  = ((uint16_t)_a[6]  < (uint16_t)_b[6] ) ? (uint16_t)_a[6] : (uint16_t)_b[6]  ;
+        uint16_t d7  = ((uint16_t)_a[7]  < (uint16_t)_b[7] ) ? (uint16_t)_a[7] : (uint16_t)_b[7]  ;
+        
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+        __m128i c = _mm_min_epu16(a,b);
+        return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2372,6 +2392,9 @@ public:
                 break;
             case IT_MM_HADD_EPI16:
                 ret = test_mm_hadd_epi16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
+                break;
+            case IT_MM_MIN_EPU16:
+                ret = test_mm_min_epu16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
                 break;
                 
         }

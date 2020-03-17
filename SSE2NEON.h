@@ -468,29 +468,29 @@ FORCE_INLINE __m128i _mm_set_epi32(int i3, int i2, int i1, int i0)
 
 // Set packed 8-bit integers in dst with the supplied values in reverse order.
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_set_epi8
-FORCE_INLINE __m128i _mm_set_epi8(char b15,
-                                  char b14,
-                                  char b13,
-                                  char b12,
-                                  char b11,
-                                  char b10,
-                                  char b9,
-                                  char b8,
-                                  char b7,
-                                  char b6,
-                                  char b5,
-                                  char b4,
-                                  char b3,
-                                  char b2,
-                                  char b1,
-                                  char b0)
+FORCE_INLINE __m128i _mm_set_epi8(signed char b15,
+                                  signed char b14,
+                                  signed char b13,
+                                  signed char b12,
+                                  signed char b11,
+                                  signed char b10,
+                                  signed char b9,
+                                  signed char b8,
+                                  signed char b7,
+                                  signed char b6,
+                                  signed char b5,
+                                  signed char b4,
+                                  signed char b3,
+                                  signed char b2,
+                                  signed char b1,
+                                  signed char b0)
 {
     int8_t __attribute__((aligned(16)))
     data[16] = {(int8_t) b0,  (int8_t) b1,  (int8_t) b2,  (int8_t) b3,
                 (int8_t) b4,  (int8_t) b5,  (int8_t) b6,  (int8_t) b7,
                 (int8_t) b8,  (int8_t) b9,  (int8_t) b10, (int8_t) b11,
                 (int8_t) b12, (int8_t) b13, (int8_t) b14, (int8_t) b15};
-    return (__m128i) vld1q_s8(data); // To be tested
+    return vreinterpretq_m128i_s8(vld1q_s8(data)); // To be tested
 }
 
 FORCE_INLINE __m128 _mm_set_ss (float a)

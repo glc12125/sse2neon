@@ -460,6 +460,9 @@ static inline float bankersRounding(float val)
         case IT_MM_MINPOS_EPU16:
             ret = "MM_MINPOS_EPU16";
         break;
+        case IT_MM_SET_EPI8:
+            ret = "MM_SET_EPI8";
+        break;
         }        
         
         return ret;
@@ -515,22 +518,22 @@ static inline float bankersRounding(float val)
     bool validateInt8(__m128i a, int8_t d0, int8_t d1, int8_t d2, int8_t d3, int8_t d4, int8_t d5, int8_t d6, int8_t d7, int8_t d8, int8_t d9, int8_t d10, int8_t d11, int8_t d12, int8_t d13, int8_t d14, int8_t d15)
     {
         const int8_t *t = (const int8_t *)&a;
-        ASSERT_RETURN(t[0] == d0);
-        ASSERT_RETURN(t[1] == d1);
-        ASSERT_RETURN(t[2] == d2);
-        ASSERT_RETURN(t[3] == d3);
-        ASSERT_RETURN(t[4] == d4);
-        ASSERT_RETURN(t[5] == d5);
-        ASSERT_RETURN(t[6] == d6);
-        ASSERT_RETURN(t[7] == d7);
-        ASSERT_RETURN(t[8] == d8);
-        ASSERT_RETURN(t[9] == d9);
-        ASSERT_RETURN(t[10] == d10);
-        ASSERT_RETURN(t[11] == d11);
-        ASSERT_RETURN(t[12] == d12);
-        ASSERT_RETURN(t[13] == d13);
-        ASSERT_RETURN(t[14] == d14);
-        ASSERT_RETURN(t[15] == d15);
+        assert_return_message<int8_t>(t[0], d0);
+        assert_return_message<int8_t>(t[1], d1);
+        assert_return_message<int8_t>(t[2], d2);
+        assert_return_message<int8_t>(t[3], d3);
+        assert_return_message<int8_t>(t[4], d4);
+        assert_return_message<int8_t>(t[5], d5);
+        assert_return_message<int8_t>(t[6], d6);
+        assert_return_message<int8_t>(t[7], d7);
+        assert_return_message<int8_t>(t[8], d8);
+        assert_return_message<int8_t>(t[9], d9);
+        assert_return_message<int8_t>(t[10] ,d10);
+        assert_return_message<int8_t>(t[11] ,d11);
+        assert_return_message<int8_t>(t[12] ,d12);
+        assert_return_message<int8_t>(t[13] ,d13);
+        assert_return_message<int8_t>(t[14] ,d14);
+        assert_return_message<int8_t>(t[15] ,d15);
         return true;
     }
     
@@ -1968,6 +1971,28 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_minpos_epu16(a);
         return validateInt16(c, minVal, minIndex, 0, 0, 0, 0, 0, 0);
     }
+
+    bool test_mm_set_epi8(const int8_t * _a)
+    {
+        int8_t d0  = (int8_t)_a[0];
+        int8_t d1  = (int8_t)_a[1];
+        int8_t d2  = (int8_t)_a[2];
+        int8_t d3  = (int8_t)_a[3];
+        int8_t d4  = (int8_t)_a[4];
+        int8_t d5  = (int8_t)_a[5];
+        int8_t d6  = (int8_t)_a[6];
+        int8_t d7  = (int8_t)_a[7];
+        int8_t d8  = (int8_t)_a[8];
+        int8_t d9  = (int8_t)_a[9];
+        int8_t d10 = (int8_t)_a[10];
+        int8_t d11 = (int8_t)_a[11];
+        int8_t d12 = (int8_t)_a[12];
+        int8_t d13 = (int8_t)_a[13];
+        int8_t d14 = (int8_t)_a[14];
+        int8_t d15 = (int8_t)_a[15];
+        __m128i a = _mm_set_epi8(d15, d14, d13, d12, d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1, d0);
+        return validateInt8(a, d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2417,6 +2442,9 @@ public:
                 break;
             case IT_MM_MINPOS_EPU16:
                 ret = test_mm_minpos_epu16((const int16_t *)mTestIntPointer1);
+                break;
+            case IT_MM_SET_EPI8:
+                ret = test_mm_set_epi8((const int8_t *)mTestIntPointer1);
                 break;                
         }
 

@@ -1437,9 +1437,21 @@ FORCE_INLINE __m128 _mm_min_ps(__m128 a, __m128 b)
 FORCE_INLINE __m128i _mm_minpos_epu16 (__m128i a)
 {
 	// TODO: this is not the correct implementation!
+	uint16_t aBuff[8];
+	vst1q_u16(aBuff, vreinterpretq_u16_m128i(a));
+	uint16_t minpos = 0;
+	uint16_t minVal = aBuff[0];
+	for(int i = 1; i < 8; ++i) {
+		if(aBuff[i] < minVal) {
+			minpos = i;
+			minVal = aBuff[i];
+		}
+	}
+	int16x8_t result = {minVal, minpos, 0, 0, 0, 0, 0, 0};
+	return vreinterpretq_m128i_u16(result);
 	// All callers only make use of the first 16 bit in the result, which is the min value
-	int16x8_t minVal = {vminvq_u16(vreinterpretq_u16_m128i(a)), 0, 0, 0, 0, 0, 0, 0};
-	return vreinterpretq_m128i_u16(minVal);
+	//int16x8_t minVal = {vminvq_u16(vreinterpretq_u16_m128i(a)), 0, 0, 0, 0, 0, 0, 0};
+	//return vreinterpretq_m128i_u16(minVal);
 }
 
 // Computes the maximum of the two lower scalar single-precision floating point values of a and b.  https://msdn.microsoft.com/en-us/library/s6db5esz(v=vs.100).aspx

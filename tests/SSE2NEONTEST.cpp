@@ -457,6 +457,9 @@ static inline float bankersRounding(float val)
         case IT_MM_MIN_EPU16:
             ret = "MM_MIN_EPU16";
         break;
+        case IT_MM_MINPOS_EPU16:
+            ret = "MM_MINPOS_EPU16";
+        break;
         }        
         
         return ret;
@@ -1949,6 +1952,22 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_min_epu16(a,b);
         return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
     }
+
+    bool test_mm_minpos_epu16(const int16_t *_a)
+    {
+        uint16_t minVal = (uint16_t)_a[0];
+        uint16_t minIndex = 0;
+        for(int i = 1; i < 8; ++i)
+        {
+            if(minVal > (uint16_t)_a[i]) {
+                minVal = (uint16_t)_a[i];
+                minIndex = i;
+            }
+        }
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i c = _mm_minpos_epu16(a);
+        return validateInt16(c, minVal, minIndex, 0, 0, 0, 0, 0, 0);
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2396,7 +2415,9 @@ public:
             case IT_MM_MIN_EPU16:
                 ret = test_mm_min_epu16((const int16_t *)mTestIntPointer1,(const int16_t *)mTestIntPointer2);
                 break;
-                
+            case IT_MM_MINPOS_EPU16:
+                ret = test_mm_minpos_epu16((const int16_t *)mTestIntPointer1);
+                break;                
         }
 
 

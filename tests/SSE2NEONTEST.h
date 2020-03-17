@@ -144,8 +144,9 @@ enum InstructionTest
     IT_MM_SHUFFLE_EPI8,   // Unit test passed
     IT_MM_ADDS_EPU16,     // Unit test passed
     IT_MM_HADD_EPI16,     // Unit test passed
-    IT_MM_ALIGNR_EPI8,    // TODO
+    //IT_MM_ALIGNR_EPI8,    // TODO
     IT_MM_MIN_EPU16,      // Unit test passed
+    IT_MM_MINPOS_EPU16,
     IT_LAST
 };
 

@@ -5,6 +5,7 @@
 #include <float.h>
 #include <math.h>
 #include <iostream>
+#include <bitset>
 
 #include "SSE2NEONBinding.h"
 #include "SSE2NEONTEST.h"
@@ -466,6 +467,9 @@ static inline float bankersRounding(float val)
         case IT_MM_CMPLT_EPI16:
             ret = "MM_CMPLT_EPI16";
         break;
+        case IT_MM_BLENDV_EPI8:
+            ret = "MM_BLENDV_EPI8";
+        break;
         }        
         
         return ret;
@@ -521,22 +525,22 @@ static inline float bankersRounding(float val)
     bool validateInt8(__m128i a, int8_t d0, int8_t d1, int8_t d2, int8_t d3, int8_t d4, int8_t d5, int8_t d6, int8_t d7, int8_t d8, int8_t d9, int8_t d10, int8_t d11, int8_t d12, int8_t d13, int8_t d14, int8_t d15)
     {
         const int8_t *t = (const int8_t *)&a;
-        assert_return_message<int8_t>(t[0], d0);
-        assert_return_message<int8_t>(t[1], d1);
-        assert_return_message<int8_t>(t[2], d2);
-        assert_return_message<int8_t>(t[3], d3);
-        assert_return_message<int8_t>(t[4], d4);
-        assert_return_message<int8_t>(t[5], d5);
-        assert_return_message<int8_t>(t[6], d6);
-        assert_return_message<int8_t>(t[7], d7);
-        assert_return_message<int8_t>(t[8], d8);
-        assert_return_message<int8_t>(t[9], d9);
-        assert_return_message<int8_t>(t[10] ,d10);
-        assert_return_message<int8_t>(t[11] ,d11);
-        assert_return_message<int8_t>(t[12] ,d12);
-        assert_return_message<int8_t>(t[13] ,d13);
-        assert_return_message<int8_t>(t[14] ,d14);
-        assert_return_message<int8_t>(t[15] ,d15);
+        ASSERT_RETURN(t[0] == d0);
+        ASSERT_RETURN(t[1] == d1);
+        ASSERT_RETURN(t[2] == d2);
+        ASSERT_RETURN(t[3] == d3);
+        ASSERT_RETURN(t[4] == d4);
+        ASSERT_RETURN(t[5] == d5);
+        ASSERT_RETURN(t[6] == d6);
+        ASSERT_RETURN(t[7] == d7);
+        ASSERT_RETURN(t[8] == d8);
+        ASSERT_RETURN(t[9] == d9);
+        ASSERT_RETURN(t[10] == d10);
+        ASSERT_RETURN(t[11] == d11);
+        ASSERT_RETURN(t[12] == d12);
+        ASSERT_RETURN(t[13] == d13);
+        ASSERT_RETURN(t[14] == d14);
+        ASSERT_RETURN(t[15] == d15);
         return true;
     }
     
@@ -2013,6 +2017,54 @@ static inline float bankersRounding(float val)
         __m128i c = _mm_cmplt_epi16(a,b);
         return validateInt16(c, d0, d1, d2, d3, d4, d5, d6, d7);
     }
+
+    bool test_mm_blendv_epi8(const int8_t * _a, const int8_t * _b, const int8_t * _mask)
+    {
+        int8_t dst[16] = {0};
+        int8_t maskCpy[16] = {0};
+        for(int i = 0; i < 16; ++i) {
+            if((uint8_t)_mask[i] == 0xFFu) {
+                maskCpy[i] = _mask[i];
+            }
+        }
+        for(int i = 0; i < 16; ++i) {
+            if((uint8_t)maskCpy[i] == 0xFFu) {
+                dst[i] |= _b[i];
+            } else {
+                dst[i] |= _a[i];
+            }
+        }
+
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+        __m128i mask = test_mm_load_ps((const int32_t *)maskCpy);
+        __m128i result = _mm_blendv_epi8(a, b, mask);
+
+        bool returnVal = validateInt8(result, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7], 
+                                      dst[8], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]);
+        if(!returnVal) {
+            for(int i = 0; i < 16; ++i) {
+                std::cout << "mask: " << std::bitset<8>(maskCpy[i]) << ", (maskCpy[i] == 0xFF): " << ((uint8_t)maskCpy[i] == 0xFFu) << ", use value from ";
+                if((uint8_t)maskCpy[i] == 0xFFu) {
+                    std::cout << "_b[" << i << "]: " << std::bitset<8>(_b[i])
+                              << " instead of _a[" << i << "]: " << std::bitset<8>(_a[i]) << "\n";
+                } else {
+                    std::cout << "_a[" << i << "]: " << std::bitset<8>(_a[i])
+                              << " instead of _b[" << i << "]: " << std::bitset<8>(_b[i]) << "\n";
+                }
+            }
+            typedef std::bitset<128> bs128;
+            std::bitset<128> dstResult;
+            int32_t* dst32 = (int32_t*)dst;
+            dstResult |= bs128(dst32[0]) | (bs128(dst32[1]) << 32) | (bs128(dst32[2]) << 64) | (bs128(dst32[3]) << 96);
+            std::cout << "dst[16]: " << dstResult << "\n,result: ";
+            std::bitset<128> bResult;
+            bResult |= bs128(result[0]) | (bs128(result[1]) << 32) | (bs128(result[2]) << 64) | (bs128(result[3]) << 96);
+            std::cout << bResult << "\n";
+        }
+
+        return returnVal;
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2028,6 +2080,7 @@ public:
         mTestFloatPointer2 = (float *)platformAlignedAlloc(sizeof(__m128));
         mTestIntPointer1 = (int32_t *)platformAlignedAlloc(sizeof(__m128i));
         mTestIntPointer2 = (int32_t *)platformAlignedAlloc(sizeof(__m128i));
+        mTestIntPointer3 = (int32_t *)platformAlignedAlloc(sizeof(__m128i));
         srand(0);
         for (uint32_t i = 0; i < MAX_TEST_VALUE; i++)
         {
@@ -2042,6 +2095,7 @@ public:
         platformAlignedFree(mTestFloatPointer2);
         platformAlignedFree(mTestIntPointer1);
         platformAlignedFree(mTestIntPointer2);
+        platformAlignedFree(mTestIntPointer3);
     }
 
     bool loadTestFloatPointers(uint32_t i)
@@ -2060,6 +2114,10 @@ public:
         if (ret)
         {
             ret = test_mm_store_ps(mTestIntPointer2, mTestInts[i + 4], mTestInts[i + 5], mTestInts[i + 6], mTestInts[i + 7]);
+        }
+        if (ret)
+        {
+            ret = test_mm_store_ps(mTestIntPointer3, mTestInts[i + 8], mTestInts[i + 9], mTestInts[i + 10], mTestInts[i + 11]);
         }
 
         return ret;
@@ -2468,6 +2526,10 @@ public:
                 break;
             case IT_MM_CMPLT_EPI16:
                 ret = test_mm_cmplt_epi16((const int16_t *)mTestIntPointer1, (const int16_t *)mTestIntPointer2);
+                break;  
+            case IT_MM_BLENDV_EPI8:
+                ret = test_mm_blendv_epi8((const int8_t *)mTestIntPointer1, (const int8_t *)mTestIntPointer2,
+                                          (const int8_t *)mTestIntPointer3);
                 break;                
         }
 
@@ -2482,8 +2544,9 @@ public:
 
 
         // Test a whole bunch of values
-        for (uint32_t i = 0; i < (MAX_TEST_VALUE - 8); i++)
+        for (uint32_t i = 0; i < (MAX_TEST_VALUE - 12); i++)
         {
+            //std::cout << "Running " << i << "th test\n";
             ret = loadTestFloatPointers(i);	// Load some random float values
             if ( !ret ) break; // load test float failed??
             ret = loadTestIntPointers(i);	// load some random int values
@@ -2608,6 +2671,7 @@ public:
     float       *mTestFloatPointer2;
     int32_t     *mTestIntPointer1;
     int32_t     *mTestIntPointer2;
+    int32_t     *mTestIntPointer3;
     float       mTestFloats[MAX_TEST_VALUE];
     int32_t     mTestInts[MAX_TEST_VALUE];
 };

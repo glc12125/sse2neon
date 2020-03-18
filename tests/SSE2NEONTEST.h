@@ -148,7 +148,8 @@ enum InstructionTest
     IT_MM_MIN_EPU16,      // Unit test passed
     IT_MM_MINPOS_EPU16,   // Unit test passed
     IT_MM_SET_EPI8,       // Unit test passed
-    IT_MM_CMPLT_EPI16,
+    IT_MM_CMPLT_EPI16,    // Unit test passed
+    IT_MM_BLENDV_EPI8,
     IT_LAST
 };
 

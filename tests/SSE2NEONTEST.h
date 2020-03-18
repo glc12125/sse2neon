@@ -149,7 +149,9 @@ enum InstructionTest
     IT_MM_MINPOS_EPU16,   // Unit test passed
     IT_MM_SET_EPI8,       // Unit test passed
     IT_MM_CMPLT_EPI16,    // Unit test passed
-    IT_MM_BLENDV_EPI8,
+    IT_MM_BLENDV_EPI8,    // Unit test passed
+    IT_MM_POPCNT_U32,     // Unit test passed
+    IT_MM_STOREL_PI,      // Unit test passed
     IT_LAST
 };
 

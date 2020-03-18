@@ -470,6 +470,12 @@ static inline float bankersRounding(float val)
         case IT_MM_BLENDV_EPI8:
             ret = "MM_BLENDV_EPI8";
         break;
+        case IT_MM_POPCNT_U32:
+            ret = "MM_POPCNT_U32";
+        break;
+        case IT_MM_STOREL_PI:
+            ret = "MM_STOREL_PI";
+        break;
         }        
         
         return ret;
@@ -2065,6 +2071,28 @@ static inline float bankersRounding(float val)
 
         return returnVal;
     }
+
+    bool test_mm_popcnt_u32(unsigned int a)
+    {
+        int cnt = 0;
+        for(int i = 0; i < 32; ++i) {
+            if((a >> i) & 1) {
+                ++cnt;
+            }
+        }
+
+        int result = _mm_popcnt_u32(a);
+        return result == cnt;
+    }
+
+    bool test_mm_storel_pi(float *p, float x, float y, float z, float w)
+    {
+        __m128 a = _mm_set_ps(x, y, z, w);
+        _mm_storel_pi((float32x2_t *)p, a);
+        ASSERT_RETURN(p[0] == w);
+        ASSERT_RETURN(p[1] == z);
+        return true;
+    }
         
     
 // Try 10,000 random floating point values for each test we run
@@ -2530,6 +2558,13 @@ public:
             case IT_MM_BLENDV_EPI8:
                 ret = test_mm_blendv_epi8((const int8_t *)mTestIntPointer1, (const int8_t *)mTestIntPointer2,
                                           (const int8_t *)mTestIntPointer3);
+                break; 
+            case IT_MM_POPCNT_U32:
+                ret = test_mm_popcnt_u32((unsigned int)mTestInts[i]);
+                break;  
+            case IT_MM_STOREL_PI:
+                float p[2];
+                ret = test_mm_storel_pi(p, mTestFloats[i], mTestFloats[i + 1], mTestFloats[i + 2], mTestFloats[i + 3]);
                 break;                
         }
 

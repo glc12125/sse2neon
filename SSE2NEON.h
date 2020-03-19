@@ -495,7 +495,7 @@ FORCE_INLINE __m128i _mm_set_epi8(signed char b15,
 
 FORCE_INLINE __m128 _mm_set_ss (float a)
 {
-	float __attribute__((aligned(16))) data[4] = {a, 0, 0, 0};
+	float __attribute__((aligned(16))) data[4] = {0, 0, 0, a};
 	return vreinterpretq_m128_f32(vld1q_f32(data));
 }
 

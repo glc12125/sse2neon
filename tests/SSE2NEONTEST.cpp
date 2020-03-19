@@ -489,6 +489,9 @@ static inline float bankersRounding(float val)
         case IT_MM_CVT_SI2SS:
             ret = "MM_CVT_SI2SS";
         break;
+        case IT_MM_SET_SS:
+            ret = "MM_SET_SS";
+        break;
         }        
         
         return ret;
@@ -2233,7 +2236,6 @@ static inline float bankersRounding(float val)
         __m128 c = _mm_cvt_si2ss(a, b);
         bool result = validateFloatEpsilon(c, floatB, _a[1], _a[2], _a[3], EPSILON);
         if(!result) {
-            const float *original = (const float *)&a;
             const float *target = (const float *)&c;
             float d3 = fabsf(target[3] - floatB);
             float d2 = fabsf(target[2] - _a[1]);
@@ -2243,6 +2245,25 @@ static inline float bankersRounding(float val)
             std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - _a[2](" << _a[2] << ")\n";
             std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - _a[1](" << _a[1] << ")\n";
             std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - floatB(" << floatB << ")\n";
+        }
+
+        return result;
+    }
+
+    bool test_mm_set_ss(float a)
+    {
+        __m128 c = _mm_set_ss(a);
+        bool result = validateFloatEpsilon(c, a, 0, 0, 0, EPSILON);
+        if(!result) {
+            const float *target = (const float *)&c;
+            float d3 = fabsf(target[3] - a);
+            float d2 = fabsf(target[2] - 0);
+            float d1 = fabsf(target[1] - 0);
+            float d0 = fabsf(target[0] - 0);
+            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - 0(" << 0 << ")\n";
+            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - 0(" << 0 << ")\n";
+            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - 0(" << 0 << ")\n";
+            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - a(" << a << ")\n";
         }
 
         return result;
@@ -2735,6 +2756,9 @@ public:
                 break;
             case IT_MM_CVT_SI2SS:
                 ret = test_mm_cvt_si2ss(mTestFloatPointer1, (int)mTestInts[i]);
+                break;
+            case IT_MM_SET_SS:
+                ret = test_mm_set_ss(mTestFloats[i]);
                 break;                
         }
 

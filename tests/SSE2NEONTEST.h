@@ -155,7 +155,8 @@ enum InstructionTest
     IT_MM_BLEND_EPI16,    // Unit test passed
     IT_MM_CMPEQ_SS,       // Unit test passed
     IT_MM_RCP_SS,         // Unit test passed
-    IT_MM_CVT_SI2SS,
+    IT_MM_CVT_SI2SS,      // Unit test passed
+    IT_MM_SET_SS,
     IT_LAST
 };
 

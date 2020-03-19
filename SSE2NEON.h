@@ -1394,7 +1394,12 @@ FORCE_INLINE __m128 _mm_rcp_ss (__m128 a)
 	vst1q_f32(recipBuff, recip);
 	float32_t aBuff[4];
 	vst1q_f32(aBuff, vreinterpretq_f32_m128(a));
-	aBuff[0] = recipBuff[0];
+	auto tmp = aBuff[3];
+	aBuff[3] = recipBuff[0];
+	aBuff[0] = tmp;
+	tmp = aBuff[1];
+	aBuff[1] = aBuff[2];
+	aBuff[2] = tmp;
 	return vreinterpretq_m128_f32(vld1q_f32(aBuff));
 }
 
@@ -1609,7 +1614,7 @@ FORCE_INLINE __m128 _mm_cmpeq_ss(__m128 a, __m128 b)
 	vst1q_f32(compareBuff, vreinterpretq_f32_m128(compareResult));
 	float32_t aBuff[4];
 	vst1q_f32(aBuff, vreinterpretq_f32_m128(a));
-	float __attribute__((aligned(16))) data[4] = {compareBuff[0], aBuff[1], aBuff[2], aBuff[3]};
+	float __attribute__((aligned(16))) data[4] = {aBuff[3], aBuff[2], aBuff[1], compareBuff[0]};
 	return vreinterpretq_m128_f32(vld1q_f32(data));
 }
 
@@ -1827,8 +1832,10 @@ FORCE_INLINE __m128i _mm_cvtsi32_si128(int a)
 FORCE_INLINE __m128 _mm_cvt_si2ss(__m128 a, int b)
 {
 	// TODO: the a is not used, because all callers of this function has set a to zeros
-	float* floatB = reinterpret_cast<float*>(&b);
-	float __attribute__((aligned(16))) data[4] = {*floatB, 0, 0, 0};
+	float32_t aBuff[4];
+	vst1q_f32(aBuff, vreinterpretq_f32_m128(a));
+	float floatB = (float)(b);
+	float __attribute__((aligned(16))) data[4] = {aBuff[3], aBuff[2], aBuff[1], floatB};
 	return vreinterpretq_m128_f32(vld1q_f32(data));
 }
 

@@ -486,6 +486,9 @@ static inline float bankersRounding(float val)
         case IT_MM_RCP_SS:
             ret = "MM_RCP_SS";
         break;
+        case IT_MM_CVT_SI2SS:
+            ret = "MM_CVT_SI2SS";
+        break;
         }        
         
         return ret;
@@ -2177,7 +2180,7 @@ static inline float bankersRounding(float val)
 
         __m128 ret = _mm_cmpeq_ss(a, b);
         __m128i iret = *(const __m128i *)&ret;
-        bool cmpResult = validateInt(iret, ((int32_t*)_a)[3], ((int32_t*)_a)[2], ((int32_t*)_a)[1], result);
+        bool cmpResult = validateInt(iret, result, ((int32_t*)_a)[1], ((int32_t*)_a)[2], ((int32_t*)_a)[3]);
 
         if(!cmpResult) {
 
@@ -2205,18 +2208,41 @@ static inline float bankersRounding(float val)
         float dx = 1.0f / _a[0];
         __m128 a = test_mm_load_ps(_a);
         __m128 c = _mm_rcp_ss(a);
-        bool result = validateFloatEpsilon(c, _a[3], _a[2], _a[1], dx, EPSILON);
+        bool result = validateFloatEpsilon(c, dx, _a[1], _a[2], _a[3], EPSILON);
         if(!result) {
             const float *original = (const float *)&a;
             const float *target = (const float *)&c;
-            float d3 = fabsf(target[3] - _a[3]);
-            float d2 = fabsf(target[2] - _a[2]);
-            float d1 = fabsf(target[1] - _a[1]);
-            float d0 = fabsf(target[0] - dx);
-            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - dx(" << dx << ")\n";
-            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - _a[1](" << _a[1] << ")\n";
-            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - _a[2](" << _a[2] << ")\n";
-            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - _a[3](" << _a[3] << ")\n";
+            float d3 = fabsf(target[3] - dx);
+            float d2 = fabsf(target[2] - _a[1]);
+            float d1 = fabsf(target[1] - _a[2]);
+            float d0 = fabsf(target[0] - _a[3]);
+            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - _a[3](" << _a[3] << ")\n";
+            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - _a[2](" << _a[2] << ")\n";
+            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - _a[1](" << _a[1] << ")\n";
+            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - dx(" << dx << ")\n";
+        }
+
+        return result;
+    }
+
+    bool test_mm_cvt_si2ss(const float *_a, int b)
+    {
+        float floatB = (float)b;
+
+        __m128 a = test_mm_load_ps(_a);
+        __m128 c = _mm_cvt_si2ss(a, b);
+        bool result = validateFloatEpsilon(c, floatB, _a[1], _a[2], _a[3], EPSILON);
+        if(!result) {
+            const float *original = (const float *)&a;
+            const float *target = (const float *)&c;
+            float d3 = fabsf(target[3] - floatB);
+            float d2 = fabsf(target[2] - _a[1]);
+            float d1 = fabsf(target[1] - _a[2]);
+            float d0 = fabsf(target[0] - _a[3]);
+            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - _a[3](" << _a[3] << ")\n";
+            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - _a[2](" << _a[2] << ")\n";
+            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - _a[1](" << _a[1] << ")\n";
+            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - floatB(" << floatB << ")\n";
         }
 
         return result;
@@ -2706,6 +2732,9 @@ public:
                 break; 
             case IT_MM_RCP_SS:
                 ret = test_mm_rcp_ss(mTestFloatPointer1);
+                break;
+            case IT_MM_CVT_SI2SS:
+                ret = test_mm_cvt_si2ss(mTestFloatPointer1, (int)mTestInts[i]);
                 break;                
         }
 

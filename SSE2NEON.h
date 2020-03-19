@@ -1377,9 +1377,7 @@ FORCE_INLINE __m128 recipq_newton(__m128 in, int n)
 // Computes the approximations of reciprocals of the four single-precision, floating-point values of a. https://msdn.microsoft.com/en-us/library/vstudio/796k1tty(v=vs.100).aspx
 FORCE_INLINE __m128 _mm_rcp_ps(__m128 in)
 {
-	float32x4_t recip = vrecpeq_f32(vreinterpretq_f32_m128(in));
-	recip = vmulq_f32(recip, vrecpsq_f32(recip, vreinterpretq_f32_m128(in)));
-	return vreinterpretq_m128_f32(recip);
+	return recipq_newton(in, 2);
 }
 
 
@@ -1389,7 +1387,9 @@ FORCE_INLINE __m128 _mm_rcp_ps(__m128 in)
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_rcp_ss
 FORCE_INLINE __m128 _mm_rcp_ss (__m128 a)
 {
-	float32x4_t recip = vrecpeq_f32(vreinterpretq_f32_m128(a));
+	//use a couple Newton-Raphson steps to refine the estimate.
+	float32x4_t recip = recipq_newton(a, 2);
+
 	float32_t recipBuff[4];
 	vst1q_f32(recipBuff, recip);
 	float32_t aBuff[4];

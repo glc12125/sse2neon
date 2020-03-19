@@ -32,6 +32,7 @@ namespace SSE2NEON
 
 // hex representation of an IEEE NAN
 const uint32_t inan = 0xffffffff;
+const float EPSILON = 1e-8;
 
 static inline float getNAN(void)
 {
@@ -481,6 +482,9 @@ static inline float bankersRounding(float val)
         break;
         case IT_MM_CMPEQ_SS:
             ret = "MM_CMPEQ_SS";
+        break;
+        case IT_MM_RCP_SS:
+            ret = "MM_RCP_SS";
         break;
         }        
         
@@ -1028,7 +1032,22 @@ static inline float bankersRounding(float val)
         float dw = 1.0f / _a[3];
         __m128 a = test_mm_load_ps(_a);
         __m128 c = _mm_rcp_ps(a);
-        return validateFloatEpsilon(c, dw, dz, dy, dx, 300.0f);
+        bool result = validateFloatEpsilon(c, dw, dz, dy, dx, 1e-1);
+
+        if(!result) {
+            const float *original = (const float *)&a;
+            const float *target = (const float *)&c;
+            float d3 = fabsf(target[3] - dw);
+            float d2 = fabsf(target[2] - dz);
+            float d1 = fabsf(target[1] - dy);
+            float d0 = fabsf(target[0] - dx);
+            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - dx(" << dx << ")\n";
+            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - dy(" << dy << ")\n";
+            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - dz(" << dz << ")\n";
+            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - dw(" << dw << ")\n";
+        }
+
+        return result;
     }
 
     bool test_mm_max_ps(const float *_a, const float *_b)
@@ -2180,6 +2199,28 @@ static inline float bankersRounding(float val)
 
         return cmpResult;
     }
+
+    bool test_mm_rcp_ss(const float *_a)
+    {
+        float dx = 1.0f / _a[0];
+        __m128 a = test_mm_load_ps(_a);
+        __m128 c = _mm_rcp_ss(a);
+        bool result = validateFloatEpsilon(c, _a[3], _a[2], _a[1], dx, EPSILON);
+        if(!result) {
+            const float *original = (const float *)&a;
+            const float *target = (const float *)&c;
+            float d3 = fabsf(target[3] - _a[3]);
+            float d2 = fabsf(target[2] - _a[2]);
+            float d1 = fabsf(target[1] - _a[1]);
+            float d0 = fabsf(target[0] - dx);
+            std::cout << "d0: " << d0 << " (target[0](" << target[0] << ") - dx(" << dx << ")\n";
+            std::cout << "d1: " << d1 << " (target[1](" << target[1] << ") - _a[1](" << _a[1] << ")\n";
+            std::cout << "d2: " << d2 << " (target[2](" << target[2] << ") - _a[2](" << _a[2] << ")\n";
+            std::cout << "d3: " << d3 << " (target[3](" << target[3] << ") - _a[3](" << _a[3] << ")\n";
+        }
+
+        return result;
+    }
     
 // Try 10,000 random floating point values for each test we run
 #define MAX_TEST_VALUE 10000
@@ -2662,6 +2703,9 @@ public:
             }
             case IT_MM_CMPEQ_SS:
                 ret = test_mm_cmpeq_ss(mTestFloatPointer1, mTestFloatPointer2);
+                break; 
+            case IT_MM_RCP_SS:
+                ret = test_mm_rcp_ss(mTestFloatPointer1);
                 break;                
         }
 

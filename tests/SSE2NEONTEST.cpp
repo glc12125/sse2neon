@@ -479,6 +479,9 @@ static inline float bankersRounding(float val)
         case IT_MM_BLEND_EPI16:
             ret = "MM_BLEND_EPI16";
         break;
+        case IT_MM_CMPEQ_SS:
+            ret = "MM_CMPEQ_SS";
+        break;
         }        
         
         return ret;
@@ -2144,6 +2147,39 @@ static inline float bankersRounding(float val)
 
         return result;
     }
+
+    bool test_mm_cmpeq_ss(const float *_a, const float *_b)
+    {
+        __m128 a = test_mm_load_ps(_a);
+        __m128 b = test_mm_load_ps(_b);
+
+        int32_t result;
+        result = (((int32_t*)_a)[0] ^ ((int32_t*)_b)[0]) == 0 ? 0xFFFFFFFF : 0;
+
+        __m128 ret = _mm_cmpeq_ss(a, b);
+        __m128i iret = *(const __m128i *)&ret;
+        bool cmpResult = validateInt(iret, ((int32_t*)_a)[3], ((int32_t*)_a)[2], ((int32_t*)_a)[1], result);
+
+        if(!cmpResult) {
+
+            std::cout << "_a[0](" << std::bitset<32>(_a[0]) << (((((int32_t*)_a)[0] ^ ((int32_t*)_b)[0]) == 0) ? ")=" : ")!=")
+                      << "_b[0](" << std::bitset<32>(_b[0]) << ")\n";
+
+            std::cout << "_a[1](" << std::bitset<32>(_a[1]) << ") "
+                      << "_a[2](" << std::bitset<32>(_a[2]) << ") "
+                      << "_a[3](" << std::bitset<32>(_a[3]) << ")\n";
+
+            typedef std::bitset<128> bs128;
+            std::bitset<128> dstResult;
+            dstResult = (bs128(_a[3]) << 96) | (bs128(_a[2]) << 64) | (bs128(_a[1]) << 32) | bs128(result);
+            std::cout << "dstRes:  " << dstResult << "\n,result: ";
+            std::bitset<128> cResult;
+            cResult = bs128(iret[0]) | (bs128(iret[1]) << 32) | (bs128(iret[2]) << 64) | (bs128(iret[3]) << 96);
+            std::cout << cResult << "\n";   
+        }
+
+        return cmpResult;
+    }
     
 // Try 10,000 random floating point values for each test we run
 #define MAX_TEST_VALUE 10000
@@ -2613,13 +2649,19 @@ public:
                 ret = test_mm_popcnt_u32((unsigned int)mTestInts[i]);
                 break;  
             case IT_MM_STOREL_PI:
+            {
                 float p[2];
                 ret = test_mm_storel_pi(p, mTestFloats[i], mTestFloats[i + 1], mTestFloats[i + 2], mTestFloats[i + 3]);
                 break;
+            }
             case IT_MM_BLEND_EPI16:
-                int32_t mask = mTestInts[i+8];
+            {   int32_t mask = mTestInts[i+8];
                 ret = test_mm_blend_epi16((const int16_t *)mTestIntPointer1, (const int16_t *)mTestIntPointer2,
                                           mask);
+                break;
+            }
+            case IT_MM_CMPEQ_SS:
+                ret = test_mm_cmpeq_ss(mTestFloatPointer1, mTestFloatPointer2);
                 break;                
         }
 

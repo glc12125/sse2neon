@@ -152,7 +152,8 @@ enum InstructionTest
     IT_MM_BLENDV_EPI8,    // Unit test passed
     IT_MM_POPCNT_U32,     // Unit test passed
     IT_MM_STOREL_PI,      // Unit test passed
-    IT_MM_BLEND_EPI16,
+    IT_MM_BLEND_EPI16,    // Unit test passed
+    IT_MM_CMPEQ_SS,       // Unit test passed
     IT_LAST
 };
 

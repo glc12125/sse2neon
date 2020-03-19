@@ -640,8 +640,8 @@ FORCE_INLINE __m128i _mm_blendv_epi8(__m128i a, __m128i b, __m128i mask) //this 
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_blend_epi16
 FORCE_INLINE __m128i _mm_blend_epi16(__m128i a, __m128i b, const int imm8)
 {
-	int16_t __attribute__((aligned(16))) data[8] = { imm8 & 1 ? 0xFFu : 0, (imm8 >> 1) & 1 ? 0xFFu : 0, (imm8 >> 2) & 1 ? 0xFFu : 0, (imm8 >> 3) & 1 ? 0xFFu : 0,
-													 (imm8 >> 4) & 1 ? 0xFFu : 0, (imm8 >> 5) & 1 ? 0xFFu : 0, (imm8 >> 6) & 1 ? 0xFFu : 0, (imm8 >> 7) & 1 ? 0xFFu : 0 };
+	int16_t __attribute__((aligned(16))) data[8] = { (imm8 & 1) ? 0xFFFF : 0, (imm8 & 2) ? 0xFFFF : 0, (imm8 & 4) ? 0xFFFF : 0, (imm8 & 8) ? 0xFFFF : 0,
+													 (imm8 & 16) ? 0xFFFF : 0, (imm8 & 32) ? 0xFFFF : 0, (imm8 & 64) ? 0xFFFF : 0, (imm8 & 128) ? 0xFFFF : 0 };
 	__m128i mask = vreinterpretq_m128i_s16(vld1q_s16(data));
     return _mm_blendv_epi8(a, b, mask);
 }

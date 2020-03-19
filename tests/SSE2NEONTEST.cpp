@@ -476,6 +476,9 @@ static inline float bankersRounding(float val)
         case IT_MM_STOREL_PI:
             ret = "MM_STOREL_PI";
         break;
+        case IT_MM_BLEND_EPI16:
+            ret = "MM_BLEND_EPI16";
+        break;
         }        
         
         return ret;
@@ -517,14 +520,14 @@ static inline float bankersRounding(float val)
     bool validateInt16(__m128i a, int16_t d0, int16_t d1, int16_t d2, int16_t d3, int16_t d4, int16_t d5, int16_t d6, int16_t d7)
     {
         const int16_t *t = (const int16_t *)&a;
-        assert_return_message<int16_t>(t[0], d0);
-        assert_return_message<int16_t>(t[1], d1);
-        assert_return_message<int16_t>(t[2], d2);
-        assert_return_message<int16_t>(t[3], d3);
-        assert_return_message<int16_t>(t[4], d4);
-        assert_return_message<int16_t>(t[5], d5);
-        assert_return_message<int16_t>(t[6], d6);
-        assert_return_message<int16_t>(t[7], d7);
+        ASSERT_RETURN(t[0] == d0);
+        ASSERT_RETURN(t[1] == d1);
+        ASSERT_RETURN(t[2] == d2);
+        ASSERT_RETURN(t[3] == d3);
+        ASSERT_RETURN(t[4] == d4);
+        ASSERT_RETURN(t[5] == d5);
+        ASSERT_RETURN(t[6] == d6);
+        ASSERT_RETURN(t[7] == d7);
         return true;
     }
 
@@ -2093,7 +2096,54 @@ static inline float bankersRounding(float val)
         ASSERT_RETURN(p[1] == z);
         return true;
     }
+
+    bool test_mm_blend_epi16(const int16_t * _a, const int16_t * _b, int32_t _mask)
+    {
+        int32_t mask = 0;
+        mask = (_mask & 1) | (_mask & 2) | (_mask & 4) | (_mask & 8) | 
+               (_mask & 16) | (_mask & 32) | (_mask & 64) | (_mask & 128);
+
+        int16_t dst[8] = {0};
+        for(int i = 0; i < 8; ++i) {
+            if(mask & (1 << i)) {
+                dst[i] |= _b[i];
+            } else {
+                dst[i] |= _a[i];
+            }
+        }
         
+        __m128i a = test_mm_load_ps((const int32_t *)_a);
+        __m128i b = test_mm_load_ps((const int32_t *)_b);
+        __m128i c = _mm_blend_epi16(a,b,mask);
+        bool result = validateInt16(c, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7]);
+
+        if(!result) {
+            for(int i = 0; i < 8; ++i) {
+                int maskValue = (1 << i);
+                std::cout << "mask(" << std::bitset<16>(mask & maskValue) << "): " << (mask & maskValue) << ", use value from ";
+                if((mask & maskValue)) {
+                    std::cout << "_b[" << i << "]: " << std::bitset<16>(_b[i])
+                              << " instead of _a[" << i << "]: " << std::bitset<16>(_a[i]) << "\n";
+                } else {
+                    std::cout << "_a[" << i << "]: " << std::bitset<16>(_a[i])
+                              << " instead of _b[" << i << "]: " << std::bitset<16>(_b[i]) << "\n";
+                }
+            }
+            typedef std::bitset<128> bs128;
+            typedef std::bitset<16> bs16;
+            std::bitset<128> dstResult;
+            dstResult = bs128(dst[0]) | (bs128(dst[1]) << 16) | (bs128(dst[2]) << 32) | (bs128(dst[3]) << 48) |
+                        (bs128(dst[4]) << 64) | (bs128(dst[5]) << 80) | (bs128(dst[6]) << 96) | (bs128(dst[7]) << 112);
+            std::cout << "d0 ~ dst7: " << bs16(dst[0]) << "|" << bs16(dst[1]) << "|" << bs16(dst[2]) << "|" << bs16(dst[3]) << "|" <<
+                         bs16(dst[4]) << "|" << bs16(dst[5]) << "|" << bs16(dst[6]) << "|" << bs16(dst[7]) << "|" << "\n";
+            std::cout << "dst[8]:  " << dstResult << "\n,result: ";
+            std::bitset<128> cResult;
+            cResult = bs128(c[0]) | (bs128(c[1]) << 32) | (bs128(c[2]) << 64) | (bs128(c[3]) << 96);
+            std::cout << cResult << "\n";
+        }
+
+        return result;
+    }
     
 // Try 10,000 random floating point values for each test we run
 #define MAX_TEST_VALUE 10000
@@ -2565,6 +2615,11 @@ public:
             case IT_MM_STOREL_PI:
                 float p[2];
                 ret = test_mm_storel_pi(p, mTestFloats[i], mTestFloats[i + 1], mTestFloats[i + 2], mTestFloats[i + 3]);
+                break;
+            case IT_MM_BLEND_EPI16:
+                int32_t mask = mTestInts[i+8];
+                ret = test_mm_blend_epi16((const int16_t *)mTestIntPointer1, (const int16_t *)mTestIntPointer2,
+                                          mask);
                 break;                
         }
 

@@ -492,6 +492,9 @@ static inline float bankersRounding(float val)
         case IT_MM_SET_SS:
             ret = "MM_SET_SS";
         break;
+        case IT_MM_MUL_SS:
+            ret = "MM_MUL_SS";
+        break;
         }        
         
         return ret;
@@ -2268,6 +2271,26 @@ static inline float bankersRounding(float val)
 
         return result;
     }
+
+    bool test_mm_mul_ss(const float *_a, const float *_b)
+    {
+        __m128 a = test_mm_load_ps(_a);
+        __m128 b = test_mm_load_ps(_b);
+
+        float lower = _a[0] * _b[0];
+
+        __m128 ret = _mm_mul_ss(a, b);
+        bool cmpResult = validateFloatEpsilon(ret, lower, _a[1], _a[2], _a[3], EPSILON);
+
+        if(!cmpResult) {
+            typedef std::bitset<32> bs32;
+            std::cout << "Expectin " << bs32(_a[3]) << "|" << bs32(_a[2]) << "|" << bs32(_a[1]) << "|" << bs32(lower) << "\n"; 
+            std::cout << "dstRes:  " << bs32(_a[3]) << "|" << bs32(_a[2]) << "|" << bs32(_a[1]) << "|" << bs32(lower) << "\n,result: ";
+            std::cout << bs32(ret[0]) << "|" << bs32(ret[1]) << "|" << bs32(ret[2]) << "|" << bs32(ret[3]) << "\n";   
+        }
+
+        return cmpResult;
+    }
     
 // Try 10,000 random floating point values for each test we run
 #define MAX_TEST_VALUE 10000
@@ -2759,6 +2782,9 @@ public:
                 break;
             case IT_MM_SET_SS:
                 ret = test_mm_set_ss(mTestFloats[i]);
+                break;
+            case IT_MM_MUL_SS:
+                ret = test_mm_mul_ss(mTestFloatPointer1, mTestFloatPointer2);
                 break;                
         }
 

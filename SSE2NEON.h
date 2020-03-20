@@ -1339,11 +1339,12 @@ FORCE_INLINE __m128 _mm_mul_ps(__m128 a, __m128 b)
 // Multiplies the four single-precision, floating-point values of a and b. https://msdn.microsoft.com/en-us/library/vstudio/22kbk6t9(v=vs.100).aspx
 FORCE_INLINE __m128 _mm_mul_ss(__m128 a, __m128 b)
 {
-	float32x2_t lowerB = vget_low_f32(vreinterpretq_f32_m128(b));
 	float32_t output[2];
-	vst1_f32(output, lowerB);
-	float __attribute__((aligned(16))) data[4] = {output[0], 1, 1, 1};
-	return vreinterpretq_m128_f32(vmulq_f32(vreinterpretq_f32_m128(a), vld1q_f32(data)));
+	vst1_f32(output, vget_low_f32(vreinterpretq_f32_m128(b)));
+	float32_t aBuff[4];
+	vst1q_f32(aBuff, vreinterpretq_f32_m128(a));
+	float __attribute__((aligned(16))) data[4] = {aBuff[3], aBuff[2], aBuff[1], output[0] * aBuff[0]};
+	return vreinterpretq_m128_f32(vld1q_f32(data));
 }
 
 // Divides the four single-precision, floating-point values of a and b. https://msdn.microsoft.com/en-us/library/edaw8147(v=vs.100).aspx

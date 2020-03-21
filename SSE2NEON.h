@@ -930,42 +930,32 @@ FORCE_INLINE __m128i _mm_shuffle_epi_3332(__m128i a)
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_shuffle_epi8&expand=5146
 FORCE_INLINE __m128i _mm_shuffle_epi8(__m128i a, __m128i b)
 {
-#if __aarch64__
     int8x16_t tbl = vreinterpretq_s8_m128i(a);   // input a
     uint8x16_t idx = vreinterpretq_u8_m128i(b);  // input b
-    uint8_t __attribute__((aligned(16)))
-    mask[16] = {0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F,
-                0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F};
     uint8x16_t idx_masked =
-        vandq_u8(idx, vld1q_u8(mask));  // avoid using meaningless bits
-
+        vandq_u8(idx, vdupq_n_u8(0x8F));  // avoid using meaningless bits
+#if defined(__aarch64__)
     return vreinterpretq_m128i_s8(vqtbl1q_s8(tbl, idx_masked));
+#elif defined(__GNUC__)
+
+    int8x16_t ret;
+    // %e and %f represent the even and odd D registers
+    // respectively.
+    __asm__(
+       "    vtbl.8  %e[ret], {%e[tbl], %f[tbl]}, %e[idx]\n"
+       "    vtbl.8  %f[ret], {%e[tbl], %f[tbl]}, %f[idx]\n"
+     : [ret] "=&w" (ret)
+     : [tbl] "w" (tbl), [idx] "w" (idx_masked));
+    return vreinterpretq_m128i_s8(ret);
 #else
-    uint8_t *tbl = (uint8_t *) &a;  // input a
-    uint8_t *idx = (uint8_t *) &b;  // input b
-    int32_t r[4];
-
-    r[0] = ((idx[3] & 0x80) ? 0 : tbl[idx[3] % 16]) << 24;
-    r[0] |= ((idx[2] & 0x80) ? 0 : tbl[idx[2] % 16]) << 16;
-    r[0] |= ((idx[1] & 0x80) ? 0 : tbl[idx[1] % 16]) << 8;
-    r[0] |= ((idx[0] & 0x80) ? 0 : tbl[idx[0] % 16]);
-
-    r[1] = ((idx[7] & 0x80) ? 0 : tbl[idx[7] % 16]) << 24;
-    r[1] |= ((idx[6] & 0x80) ? 0 : tbl[idx[6] % 16]) << 16;
-    r[1] |= ((idx[5] & 0x80) ? 0 : tbl[idx[5] % 16]) << 8;
-    r[1] |= ((idx[4] & 0x80) ? 0 : tbl[idx[4] % 16]);
-
-    r[2] = ((idx[11] & 0x80) ? 0 : tbl[idx[11] % 16]) << 24;
-    r[2] |= ((idx[10] & 0x80) ? 0 : tbl[idx[10] % 16]) << 16;
-    r[2] |= ((idx[9] & 0x80) ? 0 : tbl[idx[9] % 16]) << 8;
-    r[2] |= ((idx[8] & 0x80) ? 0 : tbl[idx[8] % 16]);
-
-    r[3] = ((idx[15] & 0x80) ? 0 : tbl[idx[15] % 16]) << 24;
-    r[3] |= ((idx[14] & 0x80) ? 0 : tbl[idx[14] % 16]) << 16;
-    r[3] |= ((idx[13] & 0x80) ? 0 : tbl[idx[13] % 16]) << 8;
-    r[3] |= ((idx[12] & 0x80) ? 0 : tbl[idx[12] % 16]);
-
-    return vld1q_s32(r);
+    // use this line if testing on aarch64
+    int8x8x2_t a_split = { vget_low_s8(tbl), vget_high_s8(tbl) };
+    return vreinterpretq_m128i_s8(
+        vcombine_s8(
+            vtbl2_s8(a_split, vget_low_u8(idx_masked)),
+            vtbl2_s8(a_split, vget_high_u8(idx_masked))
+        )
+    );
 #endif
 }
 
@@ -1443,18 +1433,28 @@ FORCE_INLINE __m128 _mm_min_ps(__m128 a, __m128 b)
 FORCE_INLINE __m128i _mm_minpos_epu16 (__m128i a)
 {
 	// TODO: this is not the correct implementation!
-	uint16_t aBuff[8];
-	vst1q_u16(aBuff, vreinterpretq_u16_m128i(a));
+	//uint16_t aBuff[8];
+	//vst1q_u16(aBuff, vreinterpretq_u16_m128i(a));
+	uint16x8_t aArray = vreinterpretq_u16_m128i(a);
 	uint16_t minpos = 0;
-	uint16_t minVal = aBuff[0];
+	uint16_t minVal = aArray[0];
 	for(int i = 1; i < 8; ++i) {
-		if(aBuff[i] < minVal) {
+		if(aArray[i] < minVal) {
 			minpos = i;
-			minVal = aBuff[i];
+			minVal = aArray[i];
+		} else {
+			aArray[i] = 0;
 		}
 	}
-	int16x8_t result = {minVal, minpos, 0, 0, 0, 0, 0, 0};
-	return vreinterpretq_m128i_u16(result);
+	aArray[0] = minVal;
+	aArray[1] = minpos;
+	aArray[2] = 0;
+	aArray[3] = 0;
+	aArray[4] = 0;
+	aArray[5] = 0;
+	aArray[6] = 0;
+	aArray[7] = 0;
+	return vreinterpretq_m128i_u16(aArray);
 	// All callers only make use of the first 16 bit in the result, which is the min value
 	//int16x8_t minVal = {vminvq_u16(vreinterpretq_u16_m128i(a)), 0, 0, 0, 0, 0, 0, 0};
 	//return vreinterpretq_m128i_u16(minVal);
@@ -1489,7 +1489,7 @@ FORCE_INLINE __m128i _mm_min_epu8(__m128i a, __m128i b)
 }
 
 
-// Computes the pairwise minima of the 8 signed 16-bit integers from a and the 16 unsigned 16-bit integers from b.
+// Computes the pairwise minima of the 8 unsigned 16-bit integers from a and the 16 unsigned 16-bit integers from b.
 FORCE_INLINE __m128i _mm_min_epu16(__m128i a, __m128i b)
 {
 	return vreinterpretq_m128i_u16(vminq_u16(vreinterpretq_u16_m128i(a), vreinterpretq_u16_m128i(b)));
@@ -1871,7 +1871,7 @@ FORCE_INLINE __m128i _mm_loadu_si128(const __m128i *p)
 //https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_stream_load_si128
 FORCE_INLINE __m128i _mm_stream_load_si128 (__m128i * mem_addr)
 {
-	return vreinterpretq_m128i_s32(vld1q_s32((int32_t *)mem_addr)); // TODO this is not the real implementation
+	return _mm_load_si128(mem_addr); // TODO this is not the real implementation
 }
 
 // ******************************************
@@ -1971,10 +1971,11 @@ FORCE_INLINE __m128i _mm_unpackhi_epi32(__m128i a, __m128i b)
 // shift to right
 // https://msdn.microsoft.com/en-us/library/bb514041(v=vs.120).aspx
 // http://blog.csdn.net/hemmingway/article/details/44828303
-FORCE_INLINE __m128i _mm_alignr_epi8(__m128i a, __m128i b, const int c)
+/*FORCE_INLINE __m128i _mm_alignr_epi8(__m128i a, __m128i b, const int c)
 {
     return (__m128i) vextq_s8((int8x16_t) a, (int8x16_t) b, c);
-}
+}*/
+#define _mm_alignr_epi8(a, b, c) ((__m128i) vextq_s8((int8x16_t) (b), (int8x16_t) (a), (c)))
 
 // Extracts the selected signed or unsigned 16-bit integer from a and zero extends.  https://msdn.microsoft.com/en-us/library/6dceta0c(v=vs.100).aspx
 //FORCE_INLINE int _mm_extract_epi16(__m128i a, __constrange(0,8) int imm)

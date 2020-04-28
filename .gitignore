@@ -1,2 +1,4 @@
 *.out
-
+**build_cross
+**run_container.sh
+**docker_run.sh

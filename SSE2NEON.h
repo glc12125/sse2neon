@@ -311,6 +311,8 @@ typedef union ALIGN_STRUCT(16) SIMDVec
  may not be visible.  */
 #ifndef __cplusplus
 extern int posix_memalign (void **, size_t, size_t);
+#elif __ANDROID__
+extern int posix_memalign (void **, size_t, size_t);
 #else
 extern "C" int posix_memalign (void **, size_t, size_t) throw ();
 #endif
